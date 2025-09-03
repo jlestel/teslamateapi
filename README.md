@@ -172,6 +172,14 @@ More detailed documentation of every endpoint will come..
     - `startDate` (optional, use canonical UTC format in RFC3339)
     - `endDate` (optional, use canonical UTC format in RFC3339)
 - GET `/api/v1/cars/:CarID/drives/:DriveID`
+- GET `/api/v1/cars/:CarID/parkings`
+  - Supported parameters:
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `hours` (optional, integer, parking minimum duration in hours)
+- GET `/api/v1/cars/:CarID/positions`
+    - `startDate` (optional, use canonical UTC format in RFC3339)
+    - `endDate` (optional, use canonical UTC format in RFC3339)
 - PUT `/api/v1/cars/:CarID/logging/:Command`
 - GET `/api/v1/cars/:CarID/logging`
 - GET `/api/v1/cars/:CarID/status`
