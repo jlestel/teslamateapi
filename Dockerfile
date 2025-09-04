@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.9
-
 # get golang container
 FROM golang:1.25.0 AS builder
 
@@ -9,23 +7,17 @@ ARG apiVersion=unknown
 # create and set workingfolder
 WORKDIR /go/src/
 
-# copy go mod files first (better cache layer)
+# copy go mod files and sourcecode
 COPY go.mod go.sum ./
-
-# download go mods (separate layer for better caching)
-RUN --mount=type=cache,target=/go/pkg/mod \
-  go mod download
-
-# copy source code
 COPY src/ .
 
-# compile the program with cache mounts
-RUN --mount=type=cache,target=/go/pkg/mod \
-  --mount=type=cache,target=/root/.cache/go-build \
+# download go mods and compile the program
+RUN go mod download && \
   CGO_ENABLED=0 GOOS=linux go build \
   -a -installsuffix cgo -ldflags="-w -s \
   -X 'main.apiVersion=${apiVersion}' \
   " -o app ./...
+
 
 # get alpine container
 FROM alpine:3.22.1 AS app
@@ -33,9 +25,8 @@ FROM alpine:3.22.1 AS app
 # create workdir
 WORKDIR /opt/app
 
-# add packages, create nonroot user and group (cache layer)
-RUN --mount=type=cache,target=/var/cache/apk \
-  apk --no-cache add ca-certificates tzdata && \
+# add packages, create nonroot user and group
+RUN apk --no-cache add ca-certificates tzdata && \
   addgroup -S nonroot && \
   adduser -S nonroot -G nonroot && \
   chown -R nonroot:nonroot .
