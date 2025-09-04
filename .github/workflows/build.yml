@@ -35,8 +35,8 @@ jobs:
         uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f #v5.8.0
         with:
           images: |
-            ${{ github.repository_owner }}/${{ github.event.repository.name }}
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+            myteslamate/${{ github.event.repository.name }}
+            ghcr.io/myteslamate/${{ github.event.repository.name }}
           tags: |
             type=edge
             type=ref,event=branch,enable=${{ (github.ref != 'refs/heads/main') }}
@@ -87,10 +87,10 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           cache-from: |
             type=gha
-            type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:buildcache
+            type=registry,ref=ghcr.io/myteslamate/${{ github.event.repository.name }}:buildcache
           cache-to: |
             type=gha,mode=max
-            type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:buildcache,mode=max
+            type=registry,ref=ghcr.io/myteslamate/${{ github.event.repository.name }}:buildcache,mode=max
           sbom: true
           build-args: |
             BUILDKIT_INLINE_CACHE=1
@@ -100,10 +100,10 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.event_name == 'release'
         run: |
           cosign sign --yes --recursive \
-            ${{ github.repository_owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
+            myteslamate/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
 
           cosign sign --yes --recursive \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
+            ghcr.io/myteslamate/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
 
       - name: Inspect image
         if: github.ref == 'refs/heads/main' || github.event_name == 'release'
@@ -131,14 +131,14 @@ jobs:
           cosign verify --rekor-url https://rekor.sigstore.dev \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            ${{ github.repository_owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
+            myteslamate/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
           echo "::endgroup::"
 
           echo "::group::Verify signature (GitHub Container Registry)"
           cosign verify --rekor-url https://rekor.sigstore.dev \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
+            ghcr.io/myteslamate/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
           echo "::endgroup::"
 
   cache-cleanup:
