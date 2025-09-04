@@ -27,13 +27,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v5.0.0
 
+      - name: Set lowercase repository owner
+        id: lowercase
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Docker meta
         id: docker_meta
         uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f #v5.8.0
         with:
           images: |
-            ${{ github.repository_owner }}/${{ github.event.repository.name }}
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+            ${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
           tags: |
             type=edge
             type=ref,event=branch,enable=${{ (github.ref != 'refs/heads/main') }}
@@ -84,10 +88,10 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           cache-from: |
             type=gha
-            type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:buildcache
+            type=registry,ref=ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:buildcache
           cache-to: |
             type=gha,mode=max
-            type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:buildcache,mode=max
+            type=registry,ref=ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:buildcache,mode=max
           sbom: true
           build-args: |
             BUILDKIT_INLINE_CACHE=1
@@ -97,10 +101,10 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.event_name == 'release'
         run: |
           cosign sign --yes --recursive \
-            ${{ github.repository_owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
+            ${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
 
           cosign sign --yes --recursive \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
 
       - name: Inspect image
         if: github.ref == 'refs/heads/main' || github.event_name == 'release'
@@ -128,14 +132,14 @@ jobs:
           cosign verify --rekor-url https://rekor.sigstore.dev \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            ${{ github.repository_owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
+            ${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
           echo "::endgroup::"
 
           echo "::group::Verify signature (GitHub Container Registry)"
           cosign verify --rekor-url https://rekor.sigstore.dev \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
           echo "::endgroup::"
 
   cache-cleanup:
@@ -155,7 +159,7 @@ jobs:
       - name: Delete old cache images
         run: |
           # Nettoyer les anciennes images de cache (garder les 5 plus récentes)
-          ghcr.io/MyTeslaMate/teslamateapi:buildcache || echo "No cache images to clean"
+          echo "Cleaning cache for ghcr.io/myteslamate/teslamateapi:buildcache" || echo "No cache images to clean"
 
   dockerhub:
     if: github.event_name == 'release'
