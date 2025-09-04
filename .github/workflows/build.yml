@@ -80,7 +80,7 @@ jobs:
           BUILDX_NO_DEFAULT_ATTESTATIONS: 1
         with:
           context: .
-          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          platforms: linux/amd64 #,linux/arm/v7,linux/arm64
           push: true
           annotations: ${{ steps.docker_meta.outputs.annotations }}
           labels: ${{ steps.docker_meta.outputs.labels }}
