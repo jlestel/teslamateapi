@@ -56,10 +56,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 #v3.11.1
-        with:
-          driver-opts: |
-            image=moby/buildkit:buildx-stable-1
-            network=host
 
       - name: Login to DockerHub
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 #v3.5.0
@@ -77,8 +73,6 @@ jobs:
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 #v6.18.0
-        env:
-          BUILDX_NO_DEFAULT_ATTESTATIONS: 1
         with:
           context: .
           platforms: linux/amd64 #,linux/arm/v7,linux/arm64
@@ -86,15 +80,10 @@ jobs:
           annotations: ${{ steps.docker_meta.outputs.annotations }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           tags: ${{ steps.docker_meta.outputs.tags }}
-          cache-from: |
-            type=gha
-            type=registry,ref=ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:buildcache
-          cache-to: |
-            type=gha,mode=max
-            type=registry,ref=ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           sbom: true
           build-args: |
-            BUILDKIT_INLINE_CACHE=1
             apiVersion=${{ fromJSON(steps.docker_meta.outputs.json).labels['org.opencontainers.image.version'] }}
 
       - name: Sign the images (with GitHub OIDC Token)
@@ -142,25 +131,6 @@ jobs:
             ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
           echo "::endgroup::"
 
-  cache-cleanup:
-    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: read
-    steps:
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Delete old cache images
-        run: |
-          # Nettoyer les anciennes images de cache (garder les 5 plus récentes)
-          echo "Cleaning cache for ghcr.io/myteslamate/teslamateapi:buildcache" || echo "No cache images to clean"
-
   dockerhub:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
@@ -173,6 +143,6 @@ jobs:
       - name: Docker Hub Description
         uses: peter-evans/dockerhub-description@432a30c9e07499fd01da9f8a49f0faf9e0ca5b77 #v4.0.2
         with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           short-description: ${{ github.event.repository.description }}
