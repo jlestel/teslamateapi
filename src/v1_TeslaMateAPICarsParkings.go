@@ -130,7 +130,7 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 				p.odometer AS end_km
 			FROM charging_processes c
 			JOIN positions p ON c.position_id = p.id
-			WHERE c.car_id = $1 AND start_date BETWEEN '2025-06-05T21:53:50.292Z' AND '2025-09-03T21:53:50.292Z'
+			WHERE c.car_id = $1
 			UNION
 			SELECT 
 				d.start_date AS start_date,
@@ -148,7 +148,7 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 			FROM drives d
 			JOIN positions start_position ON d.start_position_id = start_position.id
 			JOIN positions end_position ON d.end_position_id = end_position.id
-			WHERE d.car_id = $2 AND start_date BETWEEN '2025-06-05T21:53:50.292Z' AND '2025-09-03T21:53:50.292Z'
+			WHERE d.car_id = $2
 			), 
 			v as (
 			SELECT

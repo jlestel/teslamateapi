@@ -111,9 +111,8 @@ func TeslaMateAPICarsPositionsV1(c *gin.Context) {
 
 	// creating required vars
 	var (
-		PositionsData                 []Positions
-		CarData                       Car
-		UnitsLength, UnitsTemperature string
+		PositionsData []Positions
+		CarData       Car
 	)
 
 	// calculate offset based on page (page 0 is not possible, since first page is minimum 1)
@@ -134,7 +133,9 @@ func TeslaMateAPICarsPositionsV1(c *gin.Context) {
 		positions p
 		inner join cars c on c.id = p.car_id
 		WHERE
-		car_id = $1 and ideal_battery_range_km is not null`
+		car_id = $1 and ideal_battery_range_km is not null
+		GROUP BY 1
+		ORDER BY 1`
 
 	// Parameters to be passed to the query
 	var queryParams []interface{}
@@ -143,19 +144,17 @@ func TeslaMateAPICarsPositionsV1(c *gin.Context) {
 
 	// Add date filtering if provided
 	if parsedStartDate != "" {
-		query += fmt.Sprintf(" AND date >= $%d", paramIndex)
+		query += fmt.Sprintf(" AND positions.time >= $%d", paramIndex)
 		queryParams = append(queryParams, parsedStartDate)
 		paramIndex++
 	}
 	if parsedEndDate != "" {
-		query += fmt.Sprintf(" AND date <= $%d", paramIndex)
+		query += fmt.Sprintf(" AND positions.time <= $%d", paramIndex)
 		queryParams = append(queryParams, parsedEndDate)
 		paramIndex++
 	}
 
 	query += fmt.Sprintf(`
-		GROUP BY 1
-		ORDER BY 1
         LIMIT $%d OFFSET $%d;`, paramIndex, paramIndex+1)
 
 	queryParams = append(queryParams, ResultShow, ResultPage)
@@ -211,10 +210,6 @@ func TeslaMateAPICarsPositionsV1(c *gin.Context) {
 		Data{
 			Car:       CarData,
 			Positions: PositionsData,
-			TeslaMateUnits: TeslaMateUnits{
-				UnitsLength:      UnitsLength,
-				UnitsTemperature: UnitsTemperature,
-			},
 		},
 	}
 
