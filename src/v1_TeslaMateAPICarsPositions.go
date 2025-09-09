@@ -127,7 +127,7 @@ func TeslaMateAPICarsPositionsV1(c *gin.Context) {
 	// getting data from database
 	query := `
 		SELECT
-		date_trunc('minute', timezone('UTC', date), 'Europe/Paris') as time,
+		date as time,
 		avg(latitude) as latitude,
 		avg(longitude) as longitude
 		FROM
