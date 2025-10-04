@@ -85,6 +85,10 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		RangeRated      PreferredRange  `json:"range_rated"`      // PreferredRange
 		OutsideTempAvg  float64         `json:"outside_temp_avg"` // float64
 		InsideTempAvg   float64         `json:"inside_temp_avg"`  // float64
+		RangeDiff       float64         `json:"range_diff"`       // float64
+		Efficiency      float64         `json:"car_efficiency"`   // float64
+		ConsumptionKWh  float64         `json:"consumption_kWh"`  // float64
+		ConsumptionWhKm float64         `json:"consumption_Wh_km"` // float64
 	}
 	// TeslaMateUnits struct - child of Data
 	type TeslaMateUnits struct {
@@ -119,7 +123,7 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 
 	// getting data from database
 	query := `
-		SELECT
+		with drives as (SELECT
 			drives.id AS drive_id,
 			start_date,
 			end_date,
@@ -142,6 +146,8 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 			duration_min > 1 AND distance > 1 AND ( start_position.usable_battery_level IS NULL OR end_position.usable_battery_level IS NULL OR ( end_position.battery_level - end_position.usable_battery_level ) = 0 ) as is_sufficiently_precise,
 			start_ideal_range_km,
 			end_ideal_range_km,
+			start_rated_range_km - end_rated_range_km as range_diff,
+			cars.efficiency as car_efficiency,
 			COALESCE( NULLIF ( GREATEST ( start_ideal_range_km - end_ideal_range_km, 0 ), 0 ),0 ) as range_diff_ideal_km,
 			start_rated_range_km,
 			end_rated_range_km,
@@ -159,7 +165,13 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 		LEFT JOIN positions end_position ON end_position_id = end_position.id
 		LEFT JOIN geofences start_geofence ON start_geofence_id = start_geofence.id
 		LEFT JOIN geofences end_geofence ON end_geofence_id = end_geofence.id
-		WHERE drives.car_id=$1 AND end_date IS NOT NULL AND start_km IS NOT NULL`
+		WHERE drives.car_id=$1 AND end_date IS NOT NULL AND start_km IS NOT null)
+		select *,
+			range_diff * car_efficiency as "consumption_kWh",
+			CASE WHEN is_sufficiently_precise THEN range_diff * car_efficiency / convert_km(distance::numeric, 'km') * 1000
+			ELSE 0
+			END AS consumption_Wh_km
+		from drives where 1=1` // additional date filtering can be added here
 
 	// Parameters to be passed to the query
 	var queryParams []interface{}
@@ -229,11 +241,15 @@ func TeslaMateAPICarsDrivesV1(c *gin.Context) {
 			&drive.RangeRated.StartRange,
 			&drive.RangeRated.EndRange,
 			&drive.RangeRated.RangeDiff,
+			&drive.RangeDiff,
+			&drive.Efficiency,
 			&drive.OutsideTempAvg,
 			&drive.InsideTempAvg,
 			&UnitsLength,
 			&UnitsTemperature,
 			&CarName,
+			&drive.ConsumptionKWh,
+			&drive.ConsumptionWhKm,
 		)
 
 		// converting values based of settings UnitsLength
