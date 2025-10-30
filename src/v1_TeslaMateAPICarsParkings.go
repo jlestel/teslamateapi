@@ -81,6 +81,8 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 		Consumption      float64 `json:"consumption"`
 		AvgPower         float64 `json:"avg_power"`
 		RangeLostPerHour float64 `json:"range_lost_per_hour"`
+		Latitude         float64 `json:"latitude"`  // float64
+		Longitude        float64 `json:"longitude"` // float64
 	}
 	type TeslaMateUnits struct {
 		UnitsLength      string `json:"unit_of_length"`      // string
@@ -115,7 +117,7 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 	// getting data from database
 	query := `
 		with merge as (
-			SELECT 
+			SELECT
 				c.start_date AS start_date,
 				c.end_date AS end_date,
 				c.start_ideal_range_km AS start_ideal_range_km,
@@ -127,12 +129,14 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 				p.usable_battery_level AS start_usable_battery_level,
 				NULL AS end_usable_battery_level,
 				p.odometer AS start_km,
-				p.odometer AS end_km
+				p.odometer AS end_km,
+				p.latitude AS latitude,
+				p.longitude AS longitude
 			FROM charging_processes c
 			JOIN positions p ON c.position_id = p.id
 			WHERE c.car_id = $1
 			UNION
-			SELECT 
+			SELECT
 				d.start_date AS start_date,
 				d.end_date AS end_date,
 				d.start_ideal_range_km AS start_ideal_range_km,
@@ -144,7 +148,9 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 				start_position.usable_battery_level AS start_usable_battery_level,
 				end_position.usable_battery_level AS end_usable_battery_level,
 				d.start_km AS start_km,
-				d.end_km AS end_km
+				d.end_km AS end_km,
+				end_position.latitude AS latitude,
+				end_position.longitude AS longitude
 			FROM drives d
 			JOIN positions start_position ON d.start_position_id = start_position.id
 			JOIN positions end_position ON d.end_position_id = end_position.id
@@ -163,7 +169,9 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 				lag(t.end_usable_battery_level) OVER w AS start_usable_battery_level,
 					start_battery_level AS end_battery_level,
 					start_usable_battery_level AS end_usable_battery_level,
-					start_battery_level > COALESCE(start_usable_battery_level, start_battery_level) AS has_reduced_range
+					start_battery_level > COALESCE(start_usable_battery_level, start_battery_level) AS has_reduced_range,
+				lag(t.latitude) OVER w AS latitude,
+				lag(t.longitude) OVER w AS longitude
 			FROM merge t
 			WINDOW w AS (ORDER BY t.start_date ASC)
 			ORDER BY start_date DESC
@@ -185,7 +193,9 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 				convert_km(CASE WHEN has_reduced_range THEN 0 ELSE (v.start_range - v.end_range)::numeric END, 'km') AS range_diff,
 			CASE WHEN has_reduced_range THEN 0 ELSE (v.start_range - v.end_range) * c.efficiency END AS consumption,
 			CASE WHEN has_reduced_range THEN 0 ELSE ((v.start_range - v.end_range) * c.efficiency) / (v.duration / 3600) * 1000 END as avg_power,
-			convert_km(CASE WHEN has_reduced_range THEN 0 ELSE ((v.start_range - v.end_range) / (v.duration / 3600))::numeric END, 'km') AS range_lost_per_hour
+			convert_km(CASE WHEN has_reduced_range THEN 0 ELSE ((v.start_range - v.end_range) / (v.duration / 3600))::numeric END, 'km') AS range_lost_per_hour,
+			v.latitude,
+			v.longitude
 			FROM v,
 			LATERAL (
 				SELECT EXTRACT(EPOCH FROM sum(age(s.end_date, s.start_date))) as sleep
@@ -265,6 +275,8 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 			&parking.Consumption,
 			&parking.AvgPower,
 			&parking.RangeLostPerHour,
+			&parking.Latitude,
+			&parking.Longitude,
 		)
 
 		// converting values based of settings UnitsLength
