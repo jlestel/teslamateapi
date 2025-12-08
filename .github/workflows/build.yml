@@ -48,8 +48,8 @@ jobs:
         uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 #v5.9.0
         with:
           images: |
-            ${{ github.repository }}
-            ghcr.io/${{ github.repository }}
+            ${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
           tags: |
             type=edge
             type=ref,event=branch,enable={{is_not_default_branch}}
@@ -91,8 +91,8 @@ jobs:
           annotations: ${{ steps.docker_meta.outputs.annotations }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           tags: |
-            ${{ github.repository }}
-            ghcr.io/${{ github.repository }}
+            ${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,scope=${{ matrix.platform }},mode=max
           sbom: true
@@ -139,8 +139,8 @@ jobs:
         uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 #v5.9.0
         with:
           images: |
-            ${{ github.repository }}
-            ghcr.io/${{ github.repository }}
+            ${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
           tags: |
             type=edge
             type=ref,event=branch,enable={{is_not_default_branch}}
@@ -188,53 +188,53 @@ jobs:
             --annotation "index:org.opencontainers.image.revision=${{ fromJSON(steps.docker_meta.outputs.json).labels['org.opencontainers.image.revision'] }}" \
             --annotation "index:org.opencontainers.image.source=${{ fromJSON(steps.docker_meta.outputs.json).labels['org.opencontainers.image.source'] }}" \
             --annotation "index:org.opencontainers.image.version=${{ fromJSON(steps.docker_meta.outputs.json).labels['org.opencontainers.image.version'] }}" \
-            $(printf '${{ github.repository }}@sha256:%s ' *) \
-            $(printf 'ghcr.io/${{ github.repository }}@sha256:%s ' *)
+            $(printf '${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@sha256:%s ' *) \
+            $(printf 'ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@sha256:%s ' *)
 
           # Get the digest of the created manifest list
-          DIGEST=$(docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.docker_meta.outputs.version }} --format '{{ json .Manifest.Digest }}' | jq -r .)
+          DIGEST=$(docker buildx imagetools inspect ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json .Manifest.Digest }}' | jq -r .)
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
       - name: Attest docker build (DockerHub)
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a #v3.0.0
         with:
-          subject-name: index.docker.io/${{ github.repository }}
+          subject-name: index.docker.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
           subject-digest: ${{ steps.docker_build.outputs.digest }}
           push-to-registry: true
 
       - name: Attest docker build (GitHub Container Registry)
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a #v3.0.0
         with:
-          subject-name: ghcr.io/${{ github.repository }}
+          subject-name: ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}
           subject-digest: ${{ steps.docker_build.outputs.digest }}
           push-to-registry: true
 
       - name: Cosign sign images (GitHub OIDC)
         run: |
           cosign sign --yes \
-            ${{ github.repository }}@${{ steps.docker_build.outputs.digest }}
+            ${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
 
           cosign sign --yes \
-            ghcr.io/${{ github.repository }}@${{ steps.docker_build.outputs.digest }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
 
       - name: Inspect images (GitHub Container Registry)
         run: |
-          docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.docker_meta.outputs.version }}
+          docker buildx imagetools inspect ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }}
 
           echo "::group::Manifest"
-          docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.docker_meta.outputs.version }} --format '{{ json .Manifest }}'
+          docker buildx imagetools inspect ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json .Manifest }}'
           echo "::endgroup::"
 
           echo "::group::Image (linux/amd64)"
-          docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .Image "linux/amd64") }}'
+          docker buildx imagetools inspect ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .Image "linux/amd64") }}'
           echo "::endgroup::"
 
           echo "::group::Provenance (linux/amd64)"
-          docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .Provenance "linux/amd64") }}'
+          docker buildx imagetools inspect ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .Provenance "linux/amd64") }}'
           echo "::endgroup::"
 
           echo "::group::SBOM (linux/amd64)"
-          docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .SBOM "linux/amd64") }}'
+          docker buildx imagetools inspect ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .SBOM "linux/amd64") }}'
           echo "::endgroup::"
 
       - name: Verify cosign signatures
@@ -243,14 +243,14 @@ jobs:
           cosign verify --rekor-url https://rekor.sigstore.dev \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            ${{ github.repository }}@${{ steps.docker_build.outputs.digest }}
+            ${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
           echo "::endgroup::"
 
           echo "::group::Verify signature (GitHub Container Registry)"
           cosign verify --rekor-url https://rekor.sigstore.dev \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            ghcr.io/${{ github.repository }}@${{ steps.docker_build.outputs.digest }}
+            ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ github.event.repository.name }}@${{ steps.docker_build.outputs.digest }}
           echo "::endgroup::"
 
   dockerhub:
