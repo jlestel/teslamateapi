@@ -221,21 +221,21 @@ jobs:
         run: |
           docker buildx imagetools inspect ghcr.io/myteslamate/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }}
 
-          echo "::group::Manifest"
-          docker buildx imagetools inspect ghcr.io/myteslamate/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json .Manifest }}'
-          echo "::endgroup::"
+#          echo "::group::Manifest"
+#          docker buildx imagetools inspect ghcr.io/myteslamate/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json .Manifest }}'
+#          echo "::endgroup::"
 
-          echo "::group::Image (linux/amd64)"
-          docker buildx imagetools inspect ghcr.io/myteslamate/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .Image "linux/amd64") }}'
-          echo "::endgroup::"
+#          echo "::group::Image (linux/amd64)"
+#          docker buildx imagetools inspect ghcr.io/myteslamate/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .Image "linux/amd64") }}'
+#          echo "::endgroup::"
 
-          echo "::group::Provenance (linux/amd64)"
-          docker buildx imagetools inspect ghcr.io/myteslamate/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .Provenance "linux/amd64") }}'
-          echo "::endgroup::"
+#          echo "::group::Provenance (linux/amd64)"
+#          docker buildx imagetools inspect ghcr.io/myteslamate/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .Provenance "linux/amd64") }}'
+#          echo "::endgroup::"
 
-          echo "::group::SBOM (linux/amd64)"
-          docker buildx imagetools inspect ghcr.io/myteslamate/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .SBOM "linux/amd64") }}'
-          echo "::endgroup::"
+#          echo "::group::SBOM (linux/amd64)"
+#          docker buildx imagetools inspect ghcr.io/myteslamate/${{ github.event.repository.name }}:${{ steps.docker_meta.outputs.version }} --format '{{ json (index .SBOM "linux/amd64") }}'
+#          echo "::endgroup::"
 
       - name: Verify cosign signatures
         run: |
