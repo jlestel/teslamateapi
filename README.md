@@ -173,6 +173,8 @@ More detailed documentation of every endpoint will come..
   - Supported parameters:
     - `startDate` (optional, use canonical UTC format in RFC3339)
     - `endDate` (optional, use canonical UTC format in RFC3339)
+    - `minDistance` (optional, filter by minimum trip distance, units based on TeslaMate settings)
+    - `maxDistance` (optional, filter by maximum trip distance, units based on TeslaMate settings)
 - GET `/api/v1/cars/:CarID/drives/:DriveID`
 - GET `/api/v1/cars/:CarID/parkings`
   - Supported parameters:
