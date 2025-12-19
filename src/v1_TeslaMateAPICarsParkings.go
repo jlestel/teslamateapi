@@ -311,7 +311,6 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 		return
 	}
 
-	//
 	// build the data-blob
 	jsonData := JSONData{
 		Data{
