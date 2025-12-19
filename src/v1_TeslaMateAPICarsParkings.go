@@ -191,8 +191,8 @@ func TeslaMateAPICarsParkingsV1(c *gin.Context) {
 				-greatest(v.start_battery_level - v.end_battery_level, 0) as soc_diff,
 				CASE WHEN has_reduced_range THEN 1 ELSE 0 END as has_reduced_range,
 				convert_km(CASE WHEN has_reduced_range THEN 0 ELSE (v.start_range - v.end_range)::numeric END, 'km') AS range_diff,
-			CASE WHEN has_reduced_range THEN 0 ELSE (v.start_range - v.end_range) * c.efficiency END AS consumption,
-			CASE WHEN has_reduced_range THEN 0 ELSE ((v.start_range - v.end_range) * c.efficiency) / (v.duration / 3600) * 1000 END as avg_power,
+			COALESCE(CASE WHEN has_reduced_range THEN 0 ELSE (v.start_range - v.end_range) * c.efficiency END, 0) AS consumption,
+			COALESCE(CASE WHEN has_reduced_range THEN 0 ELSE ((v.start_range - v.end_range) * c.efficiency) / (v.duration / 3600) * 1000 END, 0) as avg_power,
 			convert_km(CASE WHEN has_reduced_range THEN 0 ELSE ((v.start_range - v.end_range) / (v.duration / 3600))::numeric END, 'km') AS range_lost_per_hour,
 			v.latitude,
 			v.longitude
