@@ -151,6 +151,12 @@ func main() {
 			v1.GET("/cars/:CarID/drives", TeslaMateAPICarsDrivesV1)
 			v1.GET("/cars/:CarID/drives/:DriveID", TeslaMateAPICarsDrivesDetailsV1)
 
+			// v1 /api/v1/cars/:CarID/parkings endpoints
+			v1.GET("/cars/:CarID/parkings", TeslaMateAPICarsParkingsV1)
+
+			// v1 /api/v1/cars/:CarID/positions endpoints
+			v1.GET("/cars/:CarID/positions", TeslaMateAPICarsPositionsV1)
+
 			// v1 /api/v1/cars/:CarID/logging endpoints
 			v1.GET("/cars/:CarID/logging", TeslaMateAPICarsLoggingV1)
 			v1.PUT("/cars/:CarID/logging/:Command", TeslaMateAPICarsLoggingV1)
