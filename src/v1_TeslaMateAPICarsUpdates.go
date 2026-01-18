@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
@@ -14,7 +16,7 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 	// authentication for the endpoint
 	validToken, errorMessage := validateAuthToken(c)
 	if !validToken {
-		TeslaMateAPIHandleErrorResponse(c, "TeslaMateAPICarsUpdatesV1", CarsUpdatesError1, errorMessage)
+		TeslaMateAPIHandleOtherResponse(c, http.StatusUnauthorized, "TeslaMateAPICarsUpdatesV1", gin.H{"error": errorMessage})
 		return
 	}
 
@@ -71,7 +73,7 @@ func TeslaMateAPICarsUpdatesV1(c *gin.Context) {
 			version
 		FROM updates
 		LEFT JOIN cars ON car_id = cars.id
-		WHERE car_id = $1 AND end_date IS NOT NULL
+		WHERE car_id = $1 AND end_date IS NOT NULL AND version IS NOT NULL
 		ORDER BY start_date DESC
 		LIMIT $2 OFFSET $3;`
 	rows, err := db.Query(query, CarID, ResultShow, ResultPage)
